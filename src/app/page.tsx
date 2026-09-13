@@ -1,69 +1,62 @@
-import Image from "next/image";
+import { UserStudio } from '@/components/UserStudio'
+import { NodeDashboard } from '@/components/NodeDashboard'
+import { ArrowRight, Server } from 'lucide-react'
 
-export default function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
+  const resolvedParams = await searchParams
+  const view = resolvedParams.view || 'Studio'
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
+    <div className="flex flex-col min-h-screen">
+      {/* Hero Section */}
+      <section className="relative w-full h-[60vh] flex items-center overflow-hidden">
+        {/* Video Background */}
+        <div className="absolute inset-0 z-0">
+          <video 
+            autoPlay 
+            loop 
+            muted 
+            playsInline
+            className="w-full h-full object-cover opacity-20"
+          >
+            <source src="/Hero_Banner.mp4" type="video/mp4" />
+          </video>
+          {/* Gradient Mask */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-white/50 to-white" />
+        </div>
+
+        {/* Hero Content */}
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-6 pt-12 text-center">
+          <div className="inline-block px-4 py-1.5 rounded-full bg-[var(--color-peach)]/30 text-[var(--color-melon)] font-semibold text-sm mb-6 border border-[var(--color-peach)]">
+            Powered by BOT Chain
+          </div>
+          <h1 className="text-5xl md:text-7xl font-extrabold text-[var(--color-charcoal)] tracking-tighter mb-6">
+            The Decentralized<br />AI Agent Compute Layer
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-xl text-[var(--color-slate)] max-w-2xl mx-auto mb-10">
+            Build, execute, and settle autonomous AI agents with zero gas fees. Frictionless credit billing meets verifiable on-chain execution.
           </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+            <button className="flex items-center space-x-2 bg-gradient-to-r from-[var(--color-melon)] to-[var(--color-melon-light)] text-white px-8 py-4 rounded-full font-bold shadow-lg shadow-[var(--color-melon)]/20 hover:shadow-xl hover:-translate-y-0.5 transition-all">
+              <span>Launch User Studio</span>
+              <ArrowRight className="w-5 h-5" />
+            </button>
+            <button className="flex items-center space-x-2 bg-white text-[var(--color-charcoal)] px-8 py-4 rounded-full font-bold border-2 border-[var(--color-peach)] hover:bg-[var(--color-offwhite)] transition-all">
+              <Server className="w-5 h-5" />
+              <span>Connect Compute Node</span>
+            </button>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </section>
+
+      {/* Main App Canvas */}
+      <section className="relative z-10 flex-1 w-full max-w-7xl mx-auto px-6 pb-24">
+        {view === 'Node Operator' ? (
+          <NodeDashboard />
+        ) : (
+          <UserStudio />
+        )}
+      </section>
     </div>
-  );
+  )
 }
