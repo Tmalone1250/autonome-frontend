@@ -7,6 +7,8 @@ import { CreditModal } from './CreditModal'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 
+import { useCredits } from './CreditContext'
+
 export function Navbar() {
   const { address, isConnected } = useAccount()
   const { connect, connectors } = useConnect()
@@ -15,6 +17,7 @@ export function Navbar() {
   const activeView = searchParams.get('view') || 'Studio'
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const { credits } = useCredits()
 
   useEffect(() => {
     setMounted(true)
@@ -57,7 +60,7 @@ export function Navbar() {
             className="flex items-center space-x-2 bg-[var(--color-offwhite)] px-4 py-2 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors text-sm font-semibold text-[var(--color-charcoal)]"
           >
             <Coins className="w-4 h-4 text-[var(--color-melon)]" />
-            <span>{mounted && isConnected ? '120 Credits' : '50 Free Credits'}</span>
+            <span>{mounted && isConnected ? `${credits} Credits` : '50 Free Credits'}</span>
           </button>
           
           {mounted && isConnected ? (

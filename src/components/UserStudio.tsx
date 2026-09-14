@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Sparkles, Globe, Code, Image as ImageIcon, Wrench, Send, Loader2, CheckCircle2 } from 'lucide-react'
 import { useAccount } from 'wagmi'
+import { useCredits } from './CreditContext'
 
 const TABS = [
   { id: 'web3', label: 'Web3 & DeFi', icon: Globe, cost: 10 },
@@ -15,16 +16,25 @@ export function UserStudio() {
   const [activeTab, setActiveTab] = useState(TABS[0])
   const [prompt, setPrompt] = useState("")
   const [isRouting, setIsRouting] = useState(false)
+  const [pipelineState, setPipelineState] = useState("")
   const [result, setResult] = useState<any>(null)
   const { address } = useAccount()
+  const { deductCredits, credits } = useCredits()
 
   const handleSend = async () => {
-    if (!prompt.trim()) return
+    if (!prompt.trim() || credits < activeTab.cost) return
     setIsRouting(true)
     setResult(null)
+    setPipelineState("Parsing Intent (Llama 3)...")
+    deductCredits(activeTab.cost)
 
     try {
-      const res = await fetch("http://localhost:8001/orchestrate", {
+      // Mocking the sequence of states before fetch resolves
+      setTimeout(() => setPipelineState("Routing to Sub-Agent..."), 1500)
+      setTimeout(() => setPipelineState("Executing on DePIN Node..."), 3000)
+      
+      const ORCHESTRATOR_URL = process.env.NEXT_PUBLIC_ORCHESTRATOR_URL || "http://localhost:8002"
+      const res = await fetch(`${ORCHESTRATOR_URL}/orchestrate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -45,6 +55,7 @@ export function UserStudio() {
       setResult({ error: err.message })
     } finally {
       setIsRouting(false)
+      setPipelineState("")
     }
   }
 
@@ -92,7 +103,7 @@ export function UserStudio() {
                   )}
                   <div>
                     <p className="font-bold text-[var(--color-charcoal)]">
-                      {isRouting && !result ? "Routing to Sub-Agent..." : "Intent Parsed & Routed"}
+                      {isRouting && !result ? pipelineState : "Intent Parsed & Routed"}
                     </p>
                     {result?.parsed_intent && (
                       <div className="mt-2 bg-gray-50 p-2 rounded-lg border border-gray-100 text-xs font-mono text-gray-600 overflow-x-auto">
@@ -107,7 +118,7 @@ export function UserStudio() {
                 {/* Sub-Agent Execution */}
                 {result && (
                   <div className="flex items-start space-x-3 pt-2 border-t border-gray-100">
-                    {result.sub_agent_result?.error ? (
+                    {result.sub_agent_result?.error || result.error ? (
                       <div className="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center mt-0.5">
                         <span className="text-red-500 font-bold text-xs">X</span>
                       </div>
@@ -116,19 +127,21 @@ export function UserStudio() {
                     )}
                     <div>
                       <p className="font-bold text-[var(--color-charcoal)]">Sub-Agent Execution</p>
-                      {result.sub_agent_result?.error ? (
-                        <p className="text-red-500 text-xs mt-1">{result.sub_agent_result.error}</p>
+                      {result.sub_agent_result?.error || result.error ? (
+                        <p className="text-red-500 text-xs mt-1">{result.sub_agent_result?.error || result.error}</p>
                       ) : (
                         <div className="mt-2 bg-gray-50 p-2 rounded-lg border border-gray-100 text-xs text-gray-600 overflow-x-auto">
-                          <p className="font-mono">{result.sub_agent_result?.inference_result || "Executed Successfully"}</p>
-                          <a 
-                            href={`https://scan.bohr.life/tx/${result.sub_agent_result?.settlement_tx_hash}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-indigo-500 hover:underline mt-2 inline-block font-mono"
-                          >
-                            View Settlement Tx ↗
-                          </a>
+                          <p className="font-mono">{result.sub_agent_result?.inference_result || result.response || "Executed Successfully"}</p>
+                          {(result.sub_agent_result?.settlement_tx_hash || result.tx_hash) && (
+                            <a 
+                              href={`https://scan.bohr.life/tx/${result.sub_agent_result?.settlement_tx_hash || result.tx_hash}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-indigo-500 hover:underline mt-2 inline-block font-mono"
+                            >
+                              View Settlement Tx ↗
+                            </a>
+                          )}
                         </div>
                       )}
                     </div>

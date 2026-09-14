@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/Providers'
@@ -20,7 +21,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <Providers>
-          <Navbar />
+          <Suspense fallback={<div className="h-16" />}>
+            <Navbar />
+          </Suspense>
           <main className="min-h-screen pt-16">
             {children}
           </main>

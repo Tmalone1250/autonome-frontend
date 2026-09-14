@@ -17,10 +17,12 @@ import {
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, usePublicClient, useSwitchChain } from 'wagmi'
-import { formatUnits } from 'viem'
+import { formatUnits, encodeFunctionData } from 'viem'
 
 const ENTRY_POINT = '0x0000000071727De22E5E9d8BAf0edAc6f37da032'
 const SIMPLE_ACCOUNT_FACTORY = '0xBC88d6012b3bf8426C2851d3798cEB5257658332'
+const ATMA_TOKEN = '0xd29dE89D308b3F1eAcF3c36f821842F8F6f3f840'
+
 const SIMPLE_ACCOUNT_FACTORY_ABI = [
   {
     inputs: [{ name: 'owner', type: 'address' }, { name: 'salt', type: 'uint256' }],
@@ -38,23 +40,55 @@ const SIMPLE_ACCOUNT_FACTORY_ABI = [
   }
 ]
 
+// SimpleAccount execute() ABI — calls any target with value+calldata
+const SIMPLE_ACCOUNT_ABI = [
+  {
+    inputs: [
+      { name: 'dest', type: 'address' },
+      { name: 'value', type: 'uint256' },
+      { name: 'func', type: 'bytes' }
+    ],
+    name: 'execute',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function'
+  }
+]
+
+const ERC20_TRANSFER_ABI = [
+  {
+    inputs: [
+      { name: 'to', type: 'address' },
+      { name: 'amount', type: 'uint256' }
+    ],
+    name: 'transfer',
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'nonpayable',
+    type: 'function'
+  }
+]
+
 export function NodeDashboard() {
   const [copied, setCopied] = useState(false)
+  const [claimError, setClaimError] = useState<string | null>(null)
+  const [claimSuccess, setClaimSuccess] = useState<string | null>(null)
   const { address: userAddress, chain } = useAccount()
   const { switchChain } = useSwitchChain()
   const publicClient = usePublicClient()
   
   // 1. Fetch Local Hardware Telemetry
-  const { data: telemetry } = useQuery({
+  const { data: telemetryData, isError: isTelemetryError } = useQuery({
     queryKey: ['node-telemetry'],
     queryFn: async () => {
       const res = await fetch('http://localhost:8000/status')
       if (!res.ok) throw new Error('Network response was not ok')
       return res.json()
     },
-    refetchInterval: 3000
+    refetchInterval: 2500,
+    retry: false
   })
 
+  const telemetry = isTelemetryError ? null : telemetryData
   const nodeAddress = telemetry?.node_address || "0x0000000000000000000000000000000000000000"
 
   // 1.5 Smart Account (ERC-4337) Logic
@@ -62,7 +96,7 @@ export function NodeDashboard() {
     address: SIMPLE_ACCOUNT_FACTORY,
     abi: SIMPLE_ACCOUNT_FACTORY_ABI,
     functionName: 'getAddress',
-    args: userAddress ? [userAddress, 0n] : undefined,
+    args: userAddress ? [userAddress, BigInt(0)] : undefined,
     chainId: 968,
     query: { enabled: !!userAddress }
   })
@@ -86,12 +120,17 @@ export function NodeDashboard() {
   const { isLoading: isWaitingTx } = useWaitForTransactionReceipt({ hash: deployTxHash })
   const isDeployActive = isDeploying || isWaitingTx
 
+  // Claim Rewards write hook (separate instance from deploy)
+  const { writeContract: writeClaimContract, data: claimTxHash, isPending: isClaiming } = useWriteContract()
+  const { isLoading: isWaitingClaim } = useWaitForTransactionReceipt({ hash: claimTxHash })
+  const isClaimActive = isClaiming || isWaitingClaim
+
   const executeDeploy = () => {
     writeContract({
       address: SIMPLE_ACCOUNT_FACTORY,
       abi: SIMPLE_ACCOUNT_FACTORY_ABI,
       functionName: 'createAccount',
-      args: [userAddress, 0n],
+      args: [userAddress, BigInt(0)],
       chainId: 968
     }, {
       onError: (err: any) => {
@@ -120,6 +159,66 @@ export function NodeDashboard() {
     }
 
     executeDeploy()
+  }
+
+  const handleClaimRewards = () => {
+    setClaimError(null)
+    setClaimSuccess(null)
+
+    if (!userAddress) {
+      setClaimError("Connect your wallet first.")
+      return
+    }
+    if (!vaultAddress) {
+      setClaimError("Vault address not resolved yet.")
+      return
+    }
+    if (!atmaBalance || (atmaBalance as bigint) === 0n) {
+      setClaimError("No ATMA balance to claim.")
+      return
+    }
+    if (chain?.id !== 968) {
+      if (switchChain) {
+        switchChain({ chainId: 968 }, {
+          onSuccess: () => executeClaim(),
+          onError: (err: any) => setClaimError(`Failed to switch network: ${err.message}`)
+        })
+      } else {
+        setClaimError("Please switch to Bohr Testnet (Chain ID 968) manually.")
+      }
+      return
+    }
+    executeClaim()
+  }
+
+  const executeClaim = () => {
+    if (!userAddress || !vaultAddress || !atmaBalance) return
+
+    // Encode ERC-20 transfer(userAddress, fullBalance) as calldata
+    const transferCalldata = encodeFunctionData({
+      abi: ERC20_TRANSFER_ABI,
+      functionName: 'transfer',
+      args: [userAddress, atmaBalance as bigint]
+    })
+
+    // Call SimpleAccount.execute(ATMA_TOKEN, 0, transferCalldata)
+    // This instructs the vault to move all ATMA to the operator's EOA
+    writeClaimContract({
+      address: vaultAddress,
+      abi: SIMPLE_ACCOUNT_ABI,
+      functionName: 'execute',
+      args: [ATMA_TOKEN, 0n, transferCalldata],
+      chainId: 968
+    }, {
+      onSuccess: (hash) => {
+        setClaimSuccess(hash)
+        console.log(`Claim tx submitted: ${hash}`)
+      },
+      onError: (err: any) => {
+        setClaimError(err.shortMessage || err.message)
+        console.error('Claim failed:', err)
+      }
+    })
   }
   
   // 2. Fetch On-Chain ATMA Balance
@@ -159,17 +258,18 @@ export function NodeDashboard() {
 
   const isOnline = telemetry?.status === "ONLINE"
 
-  const { data: logsData } = useQuery({
+  const { data: logsData, isError: isLogsError } = useQuery({
     queryKey: ['node-logs'],
     queryFn: async () => {
       const res = await fetch('http://localhost:8000/logs')
       if (!res.ok) throw new Error('Network response was not ok')
       return res.json()
     },
-    refetchInterval: 3000
+    refetchInterval: 2500,
+    retry: false
   })
 
-  const logs = logsData?.logs || []
+  const logs = (isLogsError ? [] : logsData?.logs) || []
 
   const timeAgo = (timestamp: number) => {
     const seconds = Math.floor(Date.now() / 1000) - timestamp
@@ -204,7 +304,7 @@ export function NodeDashboard() {
             </div>
             <div className="flex items-center space-x-2 bg-[var(--color-offwhite)] px-3 py-1 rounded-full border border-gray-200 text-sm">
               <span className="font-mono text-[var(--color-charcoal)] font-medium">
-                {nodeAddress !== "0x0000000000000000000000000000000000000000" ? `${nodeAddress.slice(0, 6)}...${nodeAddress.slice(-4)}` : 'Connecting...'}
+                {nodeAddress !== "0x0000000000000000000000000000000000000000" ? `${nodeAddress.slice(0, 6)}...${nodeAddress.slice(-4)}` : (isOnline ? 'Connecting...' : 'Offline')}
               </span>
               <button onClick={handleCopy} className="text-gray-400 hover:text-[var(--color-charcoal)] transition-colors">
                 {copied ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
@@ -337,8 +437,27 @@ export function NodeDashboard() {
                 {isDeployActive ? 'Deploying...' : 'Deploy Smart Account'}
               </button>
             )}
-            <button className="w-full bg-[var(--color-melon)] hover:bg-[var(--color-melon-light)] text-white py-2.5 rounded-xl text-sm font-bold shadow-md transition-all">
-              Claim Rewards
+
+            {claimError && (
+              <p className="text-xs text-red-500 font-medium text-center">{claimError}</p>
+            )}
+            {claimSuccess && (
+              <a
+                href={`https://scan.bohr.life/tx/${claimSuccess}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-emerald-600 font-medium text-center hover:underline block"
+              >
+                ✅ Claimed! View Tx →
+              </a>
+            )}
+
+            <button
+              onClick={handleClaimRewards}
+              disabled={isClaimActive || !atmaBalance || (atmaBalance as bigint) === 0n}
+              className="w-full bg-[var(--color-melon)] hover:bg-[var(--color-melon-light)] disabled:opacity-50 disabled:cursor-not-allowed text-white py-2.5 rounded-xl text-sm font-bold shadow-md transition-all"
+            >
+              {isWaitingClaim ? 'Confirming...' : isClaiming ? 'Sign in Wallet...' : 'Claim Rewards'}
             </button>
           </div>
         </div>
@@ -420,9 +539,15 @@ export function NodeDashboard() {
                       <Copy className="w-3 h-3 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => navigator.clipboard.writeText(log.proof_hash)} />
                     </td>
                     <td className="py-4 px-4 text-sm font-mono">
-                      <a href={`https://scan.bohr.life/tx/${log.tx_hash}`} target="_blank" rel="noreferrer" className="text-indigo-500 hover:underline">
-                        {log.tx_hash.slice(0, 6)}...{log.tx_hash.slice(-4)}
-                      </a>
+                      {log.tx_hash && log.tx_hash.startsWith("0x") ? (
+                        <a href={`https://scan.bohr.life/tx/${log.tx_hash}`} target="_blank" rel="noreferrer" className="text-indigo-500 hover:underline">
+                          {log.tx_hash.slice(0, 6)}...{log.tx_hash.slice(-4)}
+                        </a>
+                      ) : (
+                        <span className="bg-yellow-50 text-yellow-600 px-2.5 py-1 rounded-lg text-xs font-bold border border-yellow-200">
+                          Pending...
+                        </span>
+                      )}
                     </td>
                     <td className="py-4 px-4 text-sm font-bold text-[var(--color-melon)]">{log.reward}</td>
                     <td className="py-4 px-4">
