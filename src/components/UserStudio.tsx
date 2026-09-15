@@ -49,7 +49,33 @@ export function UserStudio() {
       }
       
       const data = await res.json()
-      setResult(data)
+      
+      if (data.sub_agent_result?.status === "enqueued") {
+        setPipelineState("Task Enqueued. Waiting for DePIN Node...")
+        const taskId = data.sub_agent_result.task_id
+        while (true) {
+          await new Promise(r => setTimeout(r, 3000))
+          const statusRes = await fetch(`/api/orchestrator/tasks/status/${taskId}`)
+          if (!statusRes.ok) {
+            throw new Error(`HTTP error checking status! status: ${statusRes.status}`)
+          }
+          const statusData = await statusRes.json()
+          
+          if (statusData.status === "completed") {
+            setResult({ 
+              ...data, 
+              sub_agent_result: statusData.result
+            })
+            break
+          } else if (statusData.status === "processing") {
+            setPipelineState("DePIN Node is processing...")
+          } else if (statusData.status === "pending") {
+            setPipelineState("Waiting for DePIN Node to pull task...")
+          }
+        }
+      } else {
+        setResult(data)
+      }
     } catch (err: any) {
       console.error(err)
       setResult({ error: err.message })
