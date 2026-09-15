@@ -33,8 +33,8 @@ export function UserStudio() {
       setTimeout(() => setPipelineState("Routing to Sub-Agent..."), 1500)
       setTimeout(() => setPipelineState("Executing on DePIN Node..."), 3000)
       
-      const ORCHESTRATOR_URL = process.env.NEXT_PUBLIC_ORCHESTRATOR_URL || "http://localhost:8002"
-      const res = await fetch(`${ORCHESTRATOR_URL}/orchestrate`, {
+      // Use the Next.js rewrite proxy to avoid Mixed Content (HTTPS -> HTTP) errors
+      const res = await fetch(`/api/orchestrator/orchestrate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
