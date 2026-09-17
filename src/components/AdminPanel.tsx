@@ -39,8 +39,8 @@ export default function AdminPanel() {
     const fetchTelemetry = async () => {
       try {
         const [nodeRes, queueRes] = await Promise.all([
-          fetch(`${ORCHESTRATOR_URL}/admin/nodes`),
-          fetch(`${ORCHESTRATOR_URL}/admin/queues`)
+          fetch(`/api/admin/nodes`),
+          fetch(`/api/admin/queues`)
         ]);
         if (nodeRes.ok) {
           const data = await nodeRes.json();
