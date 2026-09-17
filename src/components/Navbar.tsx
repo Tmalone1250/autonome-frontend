@@ -62,6 +62,15 @@ export function Navbar() {
             <Coins className="w-4 h-4 text-[var(--color-melon)]" />
             <span>{mounted && isConnected ? `${credits} Credits` : '50 Free Credits'}</span>
           </button>
+
+          {mounted && isConnected && address?.toLowerCase() === (process.env.NEXT_PUBLIC_ADMIN_WALLET?.toLowerCase() || '0x7a8c761afbbb1fc86454dfa1a963370265804b85') && (
+            <Link 
+              href="/admin"
+              className="flex items-center space-x-2 bg-slate-800 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-slate-700 transition-colors border border-slate-700"
+            >
+              <span>Admin Panel</span>
+            </Link>
+          )}
           
           {mounted && isConnected ? (
             <button 
