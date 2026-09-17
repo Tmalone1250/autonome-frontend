@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 
-const ORCHESTRATOR_URL = process.env.NEXT_PUBLIC_ORCHESTRATOR_URL || "http://localhost:8002";
+// ORCHESTRATOR_URL is server-side only (no NEXT_PUBLIC_ prefix)
+// Set this in Vercel env vars to your VPS public URL, e.g. http://1.2.3.4:8002
+const ORCHESTRATOR_URL = process.env.ORCHESTRATOR_URL || process.env.NEXT_PUBLIC_ORCHESTRATOR_URL || "http://localhost:8002";
 
 export async function GET() {
   try {
