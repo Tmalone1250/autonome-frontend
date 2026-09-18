@@ -591,7 +591,7 @@ export function NodeDashboard() {
               {/* AppImage */}
               <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center">
                 <a 
-                  href="https://github.com/Tmalone1250/autonome-frontend/releases/download/v0.1.2/autonome-desktop_0.1.0_amd64.AppImage" 
+                  href="https://github.com/Tmalone1250/autonome-frontend/releases/download/v0.1.3/autonome-desktop_0.1.0_amd64.AppImage" 
                   className="flex items-center space-x-2 bg-[var(--color-melon)] text-white px-6 py-2 rounded-full font-bold shadow hover:bg-[var(--color-melon-light)] transition-colors w-full justify-center"
                 >
                   <Download className="w-4 h-4" />
@@ -608,7 +608,7 @@ export function NodeDashboard() {
               {/* Deb */}
               <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center">
                 <a 
-                  href="https://github.com/Tmalone1250/autonome-frontend/releases/download/v0.1.2/autonome-desktop_0.1.0_amd64.deb" 
+                  href="https://github.com/Tmalone1250/autonome-frontend/releases/download/v0.1.3/autonome-desktop_0.1.0_amd64.deb" 
                   className="flex items-center space-x-2 bg-[var(--color-charcoal)] text-white px-6 py-2 rounded-full font-bold shadow hover:bg-gray-800 transition-colors w-full justify-center"
                 >
                   <Download className="w-4 h-4" />
@@ -625,7 +625,7 @@ export function NodeDashboard() {
               {/* RPM */}
               <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center">
                 <a 
-                  href="https://github.com/Tmalone1250/autonome-frontend/releases/download/v0.1.2/autonome-desktop-0.1.0-1.x86_64.rpm" 
+                  href="https://github.com/Tmalone1250/autonome-frontend/releases/download/v0.1.3/autonome-desktop-0.1.0-1.x86_64.rpm" 
                   className="flex items-center space-x-2 bg-[var(--color-charcoal)] text-white px-6 py-2 rounded-full font-bold shadow hover:bg-gray-800 transition-colors w-full justify-center"
                 >
                   <Download className="w-4 h-4" />
