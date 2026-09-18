@@ -3,6 +3,7 @@
 The **Autonome Consumer Web Frontend** is a modern Next.js web application that serves dual purposes:
 1. **User Studio**: A natural language prompt workspace allowing users to dispatch AI autonomous agent tasks to the compute network.
 2. **Node Operator Dashboard**: A real-time telemetry console where DePIN node operators monitor compute node performance, inspect verifiable execution logs, view settlement transactions on Bohr Scan, and claim earned ATMA tokens from their ERC-4337 Smart Account Vaults.
+3. **Admin Control Panel**: A secure, whitelisted macro-telemetry dashboard for protocol administrators to track global network health, node activity, and orchestrator queues.
 
 ---
 
