@@ -12,7 +12,9 @@ import {
   ShieldCheck,
   Server,
   Clock,
-  Lock
+  Lock,
+  Download,
+  X
 } from 'lucide-react'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
@@ -72,6 +74,8 @@ export function NodeDashboard() {
   const [copied, setCopied] = useState(false)
   const [claimError, setClaimError] = useState<string | null>(null)
   const [claimSuccess, setClaimSuccess] = useState<string | null>(null)
+  const [isDownloadsModalOpen, setIsDownloadsModalOpen] = useState(false)
+  const [installInstructionsModal, setInstallInstructionsModal] = useState<'appimage' | 'deb' | 'rpm' | null>(null)
   const { address: userAddress, chain } = useAccount()
   const { switchChain } = useSwitchChain()
   const publicClient = usePublicClient()
@@ -323,6 +327,13 @@ export function NodeDashboard() {
           </div>
         </div>
         <div className="flex items-center space-x-3">
+           <button 
+             onClick={() => setIsDownloadsModalOpen(true)}
+             className="flex items-center space-x-2 bg-indigo-50 text-indigo-600 border border-indigo-200 px-4 py-2 rounded-xl text-sm font-bold hover:bg-indigo-100 transition-colors shadow-sm"
+           >
+             <Download className="w-4 h-4" />
+             <span>Download Node</span>
+           </button>
            <button className="bg-[var(--color-charcoal)] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-800 transition-colors shadow-sm">
              Node Settings
            </button>
@@ -563,6 +574,128 @@ export function NodeDashboard() {
           </table>
         </div>
       </div>
+      {/* Modals */}
+      {isDownloadsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-8 max-w-lg w-full border border-[var(--color-peach)] shadow-xl relative">
+            <button 
+              onClick={() => setIsDownloadsModalOpen(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-2xl font-extrabold text-[var(--color-charcoal)] mb-2">Download Node Client</h2>
+            <p className="text-[var(--color-slate)] text-sm mb-6">Autonome Desktop v0.1.0 for Linux.</p>
+
+            <div className="space-y-4">
+              {/* AppImage */}
+              <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center">
+                <a 
+                  href="https://github.com/Tmalone1250/autonome-frontend/releases/download/v0.1.0/autonome-desktop_0.1.0_amd64.AppImage" 
+                  className="flex items-center space-x-2 bg-[var(--color-melon)] text-white px-6 py-2 rounded-full font-bold shadow hover:bg-[var(--color-melon-light)] transition-colors w-full justify-center"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Download .AppImage (Universal)</span>
+                </a>
+                <button 
+                  onClick={() => setInstallInstructionsModal('appimage')}
+                  className="mt-3 text-xs text-indigo-500 font-bold hover:underline"
+                >
+                  View Install Instructions
+                </button>
+              </div>
+
+              {/* Deb */}
+              <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center">
+                <a 
+                  href="https://github.com/Tmalone1250/autonome-frontend/releases/download/v0.1.0/autonome-desktop_0.1.0_amd64.deb" 
+                  className="flex items-center space-x-2 bg-[var(--color-charcoal)] text-white px-6 py-2 rounded-full font-bold shadow hover:bg-gray-800 transition-colors w-full justify-center"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Download .deb (Debian/Ubuntu)</span>
+                </a>
+                <button 
+                  onClick={() => setInstallInstructionsModal('deb')}
+                  className="mt-3 text-xs text-indigo-500 font-bold hover:underline"
+                >
+                  View Install Instructions
+                </button>
+              </div>
+
+              {/* RPM */}
+              <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center">
+                <a 
+                  href="https://github.com/Tmalone1250/autonome-frontend/releases/download/v0.1.0/autonome-desktop-0.1.0-1.x86_64.rpm" 
+                  className="flex items-center space-x-2 bg-[var(--color-charcoal)] text-white px-6 py-2 rounded-full font-bold shadow hover:bg-gray-800 transition-colors w-full justify-center"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Download .rpm (Fedora/RHEL)</span>
+                </a>
+                <button 
+                  onClick={() => setInstallInstructionsModal('rpm')}
+                  className="mt-3 text-xs text-indigo-500 font-bold hover:underline"
+                >
+                  View Install Instructions
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Instructions Modal */}
+      {installInstructionsModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full border border-indigo-100 shadow-xl relative">
+            <button 
+              onClick={() => setInstallInstructionsModal(null)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-bold text-[var(--color-charcoal)] mb-4">
+              {installInstructionsModal === 'appimage' && 'AppImage Install Instructions'}
+              {installInstructionsModal === 'deb' && '.deb Install Instructions'}
+              {installInstructionsModal === 'rpm' && '.rpm Install Instructions'}
+            </h2>
+            
+            <div className="bg-gray-900 rounded-xl p-4 font-mono text-xs text-green-400 overflow-x-auto space-y-2">
+              {installInstructionsModal === 'appimage' && (
+                <>
+                  <p className="text-gray-400"># 1. Download the file</p>
+                  <p className="text-gray-400"># 2. Make it executable</p>
+                  <p>chmod +x autonome-desktop_0.1.0_amd64.AppImage</p>
+                  <p className="text-gray-400"># 3. Run the application</p>
+                  <p>./autonome-desktop_0.1.0_amd64.AppImage</p>
+                </>
+              )}
+              {installInstructionsModal === 'deb' && (
+                <>
+                  <p className="text-gray-400"># 1. Download the file</p>
+                  <p className="text-gray-400"># 2. Install via apt</p>
+                  <p>sudo apt install ./autonome-desktop_0.1.0_amd64.deb</p>
+                  <p className="text-gray-400"># 3. Launch from applications menu</p>
+                </>
+              )}
+              {installInstructionsModal === 'rpm' && (
+                <>
+                  <p className="text-gray-400"># 1. Download the file</p>
+                  <p className="text-gray-400"># 2. Install via dnf or rpm</p>
+                  <p>sudo dnf install ./autonome-desktop-0.1.0-1.x86_64.rpm</p>
+                  <p className="text-gray-400"># 3. Launch from applications menu</p>
+                </>
+              )}
+            </div>
+
+            <button 
+              onClick={() => setInstallInstructionsModal(null)}
+              className="mt-6 w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-2 rounded-xl transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
