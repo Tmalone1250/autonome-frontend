@@ -84,6 +84,7 @@ export function UserStudio() {
             
             if (statusData.status === "completed") {
               if (statusData.result?.error) {
+                setPipelineState("Relayer settlement failed: " + statusData.result.error)
                 setResult({ ...data, sub_agent_result: statusData.result })
                 break
               } else if (statusData.result?.settlement_tx_hash === "PENDING") {
