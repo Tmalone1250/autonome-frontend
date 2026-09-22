@@ -562,10 +562,22 @@ export function NodeDashboard() {
                     </td>
                     <td className="py-4 px-4 text-sm font-bold text-[var(--color-melon)]">{log.reward}</td>
                     <td className="py-4 px-4">
-                      <span className="flex items-center space-x-1 text-emerald-500">
-                        <CheckCircle2 className="w-4 h-4" />
-                        <span className="text-xs font-bold">{log.status}</span>
-                      </span>
+                      {log.status === "Settled" ? (
+                        <span className="flex items-center space-x-1 text-emerald-500">
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span className="text-xs font-bold">{log.status}</span>
+                        </span>
+                      ) : log.status === "Failed" ? (
+                        <span className="flex items-center space-x-1 text-red-500">
+                          <X className="w-4 h-4" />
+                          <span className="text-xs font-bold">{log.status}</span>
+                        </span>
+                      ) : (
+                        <span className="flex items-center space-x-1 text-orange-500">
+                          <Clock className="w-4 h-4" />
+                          <span className="text-xs font-bold">{log.status}</span>
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))
