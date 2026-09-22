@@ -84,7 +84,7 @@ export function NodeDashboard() {
   const { data: telemetryData, isError: isTelemetryError } = useQuery({
     queryKey: ['node-telemetry'],
     queryFn: async () => {
-      const res = await fetch('http://localhost:8000/status')
+      const res = await fetch('/api/worker/status')
       if (!res.ok) throw new Error('Network response was not ok')
       return res.json()
     },
@@ -265,7 +265,7 @@ export function NodeDashboard() {
   const { data: logsData, isError: isLogsError } = useQuery({
     queryKey: ['node-logs'],
     queryFn: async () => {
-      const res = await fetch('http://localhost:8000/logs')
+      const res = await fetch('/api/worker/logs')
       if (!res.ok) throw new Error('Network response was not ok')
       return res.json()
     },
@@ -285,7 +285,7 @@ export function NodeDashboard() {
 
   const handlePurgeMemory = async () => {
     try {
-      const res = await fetch('http://localhost:8000/purge-memory', { method: 'POST' })
+      const res = await fetch('/api/worker/purge-memory', { method: 'POST' })
       if (res.ok) {
         alert("Model cache purged successfully. RAM released.")
       } else {
