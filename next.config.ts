@@ -5,11 +5,11 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/orchestrator/:path*',
-        destination: `${process.env.NEXT_PUBLIC_ORCHESTRATOR_URL || 'http://localhost:8002'}/:path*`
+        destination: `${process.env.NEXT_PUBLIC_ORCHESTRATOR_URL || 'http://127.0.0.1:8002'}/:path*`
       },
       {
         source: '/api/worker/:path*',
-        destination: `${process.env.NEXT_PUBLIC_WORKER_URL || 'http://localhost:8000'}/:path*`
+        destination: `${process.env.NEXT_PUBLIC_WORKER_URL || 'http://127.0.0.1:8000'}/:path*`
       }
     ]
   }
