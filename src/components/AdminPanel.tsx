@@ -71,7 +71,7 @@ export default function AdminPanel() {
         const eventLogs = await publicClient.getLogs({
           address: ESCROW_ADDRESS,
           event: parseAbiItem(
-            "event TaskSettled(bytes32 indexed taskId, address indexed subAgent, address indexed computeNode, uint256 subAgentReward, uint256 nodeReward, uint256 polAllocation, uint256 burnedAmount)"
+            "event TaskSettled(bytes32 indexed taskId, address indexed subAgent, address[] computeNodes, uint256 subAgentReward, uint256 totalNodeReward, uint256 polAllocation, uint256 burnedAmount)"
           ),
           fromBlock,
           toBlock: currentBlock,
@@ -90,7 +90,7 @@ export default function AdminPanel() {
 
   // Aggregations
   const totalSubAgent = events.reduce((acc, ev) => acc + (ev.args.subAgentReward || 0n), 0n);
-  const totalNode = events.reduce((acc, ev) => acc + (ev.args.nodeReward || 0n), 0n);
+  const totalNode = events.reduce((acc, ev) => acc + (ev.args.totalNodeReward || 0n), 0n);
   const totalPol = events.reduce((acc, ev) => acc + (ev.args.polAllocation || 0n), 0n);
   const totalBurn = events.reduce((acc, ev) => acc + (ev.args.burnedAmount || 0n), 0n);
   const globalDistributed = totalSubAgent + totalNode;
@@ -258,8 +258,23 @@ export default function AdminPanel() {
                       <div className="text-emerald-400 font-semibold">+{Number(formatEther(ev.args.subAgentReward || 0n)).toFixed(2)} ATMA</div>
                     </td>
                     <td className="px-6 py-4 text-xs">
-                      <div className="font-mono text-slate-400">{ev.args.computeNode.slice(0, 8)}...</div>
-                      <div className="text-emerald-400 font-semibold">+{Number(formatEther(ev.args.nodeReward || 0n)).toFixed(2)} ATMA</div>
+                      <div className="font-mono text-slate-400 group relative">
+                        {ev.args.computeNodes && ev.args.computeNodes.length > 0 ? (
+                          <>
+                            {ev.args.computeNodes.length === 1 
+                              ? `${ev.args.computeNodes[0].slice(0, 8)}...` 
+                              : `${ev.args.computeNodes.length} Nodes Distributed`}
+                            {ev.args.computeNodes.length > 1 && (
+                              <div className="absolute hidden group-hover:block bg-slate-900 border border-slate-700 p-2 rounded -top-8 left-0 z-10 w-48 shadow-lg">
+                                {ev.args.computeNodes.map((n: string, idx: number) => (
+                                  <div key={idx} className="truncate">{n}</div>
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        ) : "0x00...00"}
+                      </div>
+                      <div className="text-emerald-400 font-semibold">+{Number(formatEther(ev.args.totalNodeReward || 0n)).toFixed(2)} ATMA</div>
                     </td>
                     <td className="px-6 py-4 text-xs text-blue-400 font-semibold">
                       +{Number(formatEther(ev.args.polAllocation || 0n)).toFixed(2)} ATMA
