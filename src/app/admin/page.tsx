@@ -3,6 +3,7 @@
 import { useAccount } from "wagmi";
 import { useEffect, useState } from "react";
 import AdminPanel from "@/components/AdminPanel";
+import RegisterNode from "@/components/RegisterNode";
 import { ShieldAlert } from "lucide-react";
 
 const ADMIN_WALLET = process.env.NEXT_PUBLIC_ADMIN_WALLET?.toLowerCase() || "0x7a8c761afbbb1fc86454dfa1a963370265804b85";
@@ -31,7 +32,10 @@ export default function AdminPage() {
             </p>
           </div>
         ) : (
-          <AdminPanel />
+          <div className="space-y-8">
+            <RegisterNode />
+            <AdminPanel />
+          </div>
         )}
       </main>
     </div>

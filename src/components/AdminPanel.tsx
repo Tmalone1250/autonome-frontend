@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePublicClient } from "wagmi";
+import { usePublicClient, useReadContracts } from "wagmi";
 import { parseAbiItem, formatEther } from "viem";
 import { Activity, Server, Cpu, Layers, Database, ShieldCheck, Flame, RefreshCcw } from "lucide-react";
 
 const ESCROW_ADDRESS = process.env.NEXT_PUBLIC_ESCROW_CONTRACT_ADDRESS as `0x${string}`;
+const REGISTRY_ADDRESS = (process.env.NEXT_PUBLIC_REGISTRY_CONTRACT_ADDRESS || "0xc92Fab9251A4dAfd4278A373a0452db12BDD8005") as `0x${string}`;
 const ORCHESTRATOR_URL = process.env.NEXT_PUBLIC_ORCHESTRATOR_URL || "http://localhost:8002";
 
 interface NodeData {
@@ -60,6 +61,33 @@ export default function AdminPanel() {
     return () => clearInterval(interval);
   }, []);
 
+  // Registry Read (Multicall)
+  const registryCalls = nodes.map(node => ({
+    address: REGISTRY_ADDRESS,
+    abi: [{
+      "inputs": [{"internalType": "address", "name": "", "type": "address"}],
+      "name": "nodeToVault",
+      "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+      "stateMutability": "view",
+      "type": "function"
+    }],
+    functionName: 'nodeToVault',
+    args: [node.node_id as `0x${string}`]
+  }));
+
+  const { data: vaultData } = useReadContracts({
+    contracts: registryCalls,
+  });
+
+  // Merge vault data into nodes
+  const nodesWithVaults = nodes.map((node, index) => {
+    const vault = vaultData?.[index]?.result as string | undefined;
+    return {
+      ...node,
+      vault: vault && vault !== "0x0000000000000000000000000000000000000000" ? vault : undefined
+    };
+  });
+
   // On-Chain Event Fetching
   useEffect(() => {
     const fetchLogs = async () => {
@@ -71,7 +99,7 @@ export default function AdminPanel() {
         const eventLogs = await publicClient.getLogs({
           address: ESCROW_ADDRESS,
           event: parseAbiItem(
-            "event TaskSettled(bytes32 indexed taskId, address indexed subAgentVault, address[] computeNodes, address[] operatorVaults, uint256 subAgentReward, uint256 totalNodeReward, uint256 polAllocation, uint256 burnedAmount)"
+            "event TaskSettled(bytes32 indexed taskId, address indexed subAgentVault, address[] computeNodes, uint256 subAgentReward, uint256 totalNodeRewardPaid, uint256 polAllocation, uint256 burnedAmount)"
           ),
           fromBlock,
           toBlock: currentBlock,
@@ -90,7 +118,7 @@ export default function AdminPanel() {
 
   // Aggregations
   const totalSubAgent = events.reduce((acc, ev) => acc + (ev.args.subAgentReward || 0n), 0n);
-  const totalNode = events.reduce((acc, ev) => acc + (ev.args.totalNodeReward || 0n), 0n);
+  const totalNode = events.reduce((acc, ev) => acc + (ev.args.totalNodeRewardPaid || 0n), 0n);
   const totalPol = events.reduce((acc, ev) => acc + (ev.args.polAllocation || 0n), 0n);
   const totalBurn = events.reduce((acc, ev) => acc + (ev.args.burnedAmount || 0n), 0n);
   const globalDistributed = totalSubAgent + totalNode;
@@ -147,7 +175,7 @@ export default function AdminPanel() {
               </div>
               <div className="bg-slate-900 p-4 rounded-xl border border-slate-700/50">
                 <p className="text-xs text-slate-400 font-medium mb-1 uppercase tracking-wider">Active Nodes</p>
-                <p className="text-2xl font-bold text-blue-400">{nodes.filter(n => n.status === 'ONLINE').length}</p>
+                <p className="text-2xl font-bold text-blue-400">{nodesWithVaults.filter(n => n.status === 'ONLINE').length}</p>
               </div>
             </div>
 
@@ -182,12 +210,12 @@ export default function AdminPanel() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/50">
-                {nodes.length === 0 ? (
+                {nodesWithVaults.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="px-6 py-8 text-center text-slate-500 italic">No compute nodes connected to Orchestrator.</td>
                   </tr>
                 ) : (
-                  nodes.map((node) => (
+                  nodesWithVaults.map((node) => (
                     <tr key={node.node_id} className="bg-slate-800 hover:bg-slate-750 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
@@ -268,14 +296,13 @@ export default function AdminPanel() {
                               {ev.args.computeNodes.map((n: string, idx: number) => (
                                 <div key={idx} className="truncate mb-1">
                                   <span className="text-slate-400">Node:</span> {n.slice(0,10)}...<br/>
-                                  <span className="text-emerald-400">Vault:</span> {ev.args.operatorVaults && ev.args.operatorVaults[idx] ? ev.args.operatorVaults[idx].slice(0,10) + "..." : "Unknown"}
                                 </div>
                               ))}
                             </div>
                           </>
                         ) : "0x00...00"}
                       </div>
-                      <div className="text-emerald-400 font-semibold">+{Number(formatEther(ev.args.totalNodeReward || 0n)).toFixed(2)} ATMA</div>
+                      <div className="text-emerald-400 font-semibold">+{Number(formatEther(ev.args.totalNodeRewardPaid || 0n)).toFixed(2)} ATMA</div>
                     </td>
                     <td className="px-6 py-4 text-xs text-blue-400 font-semibold">
                       +{Number(formatEther(ev.args.polAllocation || 0n)).toFixed(2)} ATMA
