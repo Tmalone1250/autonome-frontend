@@ -13,6 +13,7 @@ interface NodeData {
   vault: string;
   status: string;
   last_heartbeat: number;
+  max_acus: number;
   hardware: {
     cpu_usage_pct?: number;
     ram_used_gb?: number;
@@ -204,6 +205,9 @@ export default function AdminPanel() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-3 text-xs text-slate-300">
+                          <span className="flex items-center text-teal-400 font-semibold border border-teal-400/20 bg-teal-400/10 px-2 py-0.5 rounded">
+                            {node.max_acus ?? 0} ACU
+                          </span>
                           <span className="flex items-center"><Cpu className="w-3 h-3 mr-1 text-slate-400"/> {node.hardware?.cpu_usage_pct ?? 0}%</span>
                           <span className="flex items-center"><Layers className="w-3 h-3 mr-1 text-slate-400"/> {node.hardware?.ram_pct ?? 0}%</span>
                         </div>
