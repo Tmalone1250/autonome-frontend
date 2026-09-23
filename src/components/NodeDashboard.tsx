@@ -84,7 +84,7 @@ export function NodeDashboard() {
   const { data: telemetryData, isError: isTelemetryError } = useQuery({
     queryKey: ['node-telemetry'],
     queryFn: async () => {
-      const res = await fetch('/api/worker/status')
+      const res = await fetch('http://127.0.0.1:8000/status')
       if (!res.ok) throw new Error('Network response was not ok')
       return res.json()
     },
@@ -265,7 +265,7 @@ export function NodeDashboard() {
   const { data: logsData, isError: isLogsError } = useQuery({
     queryKey: ['node-logs'],
     queryFn: async () => {
-      const res = await fetch('/api/worker/logs')
+      const res = await fetch('http://127.0.0.1:8000/logs')
       if (!res.ok) throw new Error('Network response was not ok')
       return res.json()
     },
